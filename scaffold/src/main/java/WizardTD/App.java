@@ -203,15 +203,16 @@ public class App extends PApplet {
                 while (trace != null) {
                     route.push(trace);
                     trace = parent[(int) trace.y][(int) trace.x];
-                    println(route);
+//                    println("route: ", route);
                 }
 
                 // Print the route
                 System.out.println("Route from spawn to wizard's house:");
-                while (!route.isEmpty()) {
-                    PVector step = route.pop();
-                    System.out.println("X: " + step.x + ", Y: " + step.y);
-                }
+//                while (!route.isEmpty()) {
+//                    PVector step = route.pop();
+//                    System.out.println("X: " + step.x + ", Y: " + step.y);
+//                }
+                println("route: ", route);
 
                 return true;
             }
@@ -226,9 +227,7 @@ public class App extends PApplet {
                         ( mapLayout[newY][newX] == 'X' || mapLayout[newY][newX] == 'W' ) && !visited[newY][newX]) {
                     queue.add(new PVector(newX, newY));
                     visited[newY][newX] = true;
-
-                    // 추가해봄
-                    parent[newY][newX] = current;
+                    parent[newY][newX] = current; // add current path to parent
                 }
 //                else{
 //                    println("Conditions do not match");
