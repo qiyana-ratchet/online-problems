@@ -57,6 +57,7 @@ public class App extends PApplet {
     private float manaPoolSpellCapMultiplier;
     private float manaPoolSpellManaGainedMultiplier;
     ArrayList<PVector> spawnLocations = new ArrayList<>(); // monster spawn location
+    ArrayList<PVector> spawnLocationsIndex = new ArrayList<>(); // monster spawn location
 
     // Add this field to your App class
     private int currentWaveIndex = 0; // Initialize to 0 to indicate no waves have started yet
@@ -76,6 +77,10 @@ public class App extends PApplet {
     // Define constants for directions (up, down, left, right)
     static final int[] dx = {-1, 1, 0, 0};
     static final int[] dy = {0, 0, -1, 1};
+
+    long lastSpawnTime = 0;
+    boolean isSpawningAllowed = false;
+     long spawningStartTime = 0;
 
     /**
      * Starting the App
@@ -146,6 +151,7 @@ public class App extends PApplet {
                         // Store the spawn location as a PVector
 //                        println("COORDS: ",col, row);
                         spawnLocations.add(new PVector(col * CELLSIZE, row * CELLSIZE + TOPBAR));
+                        spawnLocationsIndex.add(new PVector(col , row));
                     }
                 }
                 row++;
@@ -174,9 +180,10 @@ public class App extends PApplet {
 
         // FINDPATH
 //        println(spawnLocations.get(0).x, spawnLocations.get(0).y);
-        findPath(mapLayout, spawnLocations.get(0), new PVector(WizardXIndex, WizardYIndex));
+//        findPath(mapLayout, spawnLocations.get(0), new PVector(WizardXIndex, WizardYIndex));
     }
 
+    Stack<PVector> route;
     public boolean findPath(char[][] mapLayout, PVector spawnLocation, PVector wizardHouse) {
         Queue<PVector> queue = new LinkedList<>();
         boolean[][] visited = new boolean[mapLayout.length][mapLayout[0].length];
@@ -193,11 +200,11 @@ public class App extends PApplet {
 
         while (!queue.isEmpty()) {
             PVector current = queue.poll();
-            println("current: ", current, "wizardHouse", wizardHouse);
+//            println("current: ", current, "wizardHouse", wizardHouse);
             // Check if the current position is the wizard's house
             if (current.equals(wizardHouse)) {
                 // Path found, backtrack to construct the route
-                Stack<PVector> route = new Stack<>();
+                route = new Stack<>();
                 PVector trace = current;
 
                 while (trace != null) {
@@ -205,14 +212,15 @@ public class App extends PApplet {
                     trace = parent[(int) trace.y][(int) trace.x];
 //                    println("route: ", route);
                 }
+                Collections.reverse(route);
 
                 // Print the route
-                System.out.println("Route from spawn to wizard's house:");
+//                System.out.println("Route from spawn to wizard's house:");
 //                while (!route.isEmpty()) {
 //                    PVector step = route.pop();
 //                    System.out.println("X: " + step.x + ", Y: " + step.y);
 //                }
-                println("route: ", route);
+//                println("route: ", route);
 
                 return true;
             }
@@ -405,15 +413,9 @@ public class App extends PApplet {
      * Draw all elements in the game by current frame.
      */
 
-
+    int monstersSpawned = 0;
     @Override
     public void draw() {
-//        try {
-//            Thread.sleep(2000);
-//        } catch (InterruptedException e) {
-//            throw new RuntimeException(e);
-//        }
-
         float timeUntilNextWave = calculateTimeUntilNextWave();
         // Calculate the time until the next wave begins
 //        println("-------Log-------");
@@ -449,14 +451,45 @@ public class App extends PApplet {
             text("All waves completed!", 10, 10);
         }
 
+        Wave currentWave = waves[currentWaveIndex];
+//        int totalMonstersToSpawn = currentWave.monsters[0].quantity;
+        int totalMonstersToSpawn = 2;
+        println("totalMonstersSpawn", totalMonstersToSpawn);
+        println(currentWave.monsters);
+        int spawnInterval = (int) (currentWave.duration * 1000) / totalMonstersToSpawn;
+
+        // Calculate the time elapsed since the last monster spawn
+        long currentTime = millis();
+        long elapsedTime = currentTime - lastSpawnTime;
+        println(isSpawningAllowed);
+        if (isSpawningAllowed && monstersSpawned < totalMonstersToSpawn){
+            println("GOGOGO1");
+            // Check if it's time to spawn a monster
+            println("elapsedTime", elapsedTime, "spawnInterval", spawnInterval);
+            float elapsedTimeSinceSpawningStart = currentTime - spawningStartTime;
+            if (elapsedTimeSinceSpawningStart >= currentWave.duration*1000) {
+                println("turning isSpawn off");
+                // Spawning duration has passed, turn off spawning
+                isSpawningAllowed = false;
+            }
+
+            if (elapsedTime >= spawnInterval) {
+                println("GOGOGO2");
+                // Spawn a monster here
+                // Update lastSpawnTime to the current time
+                spawnMonster(currentWave.monsters[0]);
+                monstersSpawned++;
+                lastSpawnTime = currentTime;
+            }
+        }
 
         // Clear moving traces by overdrawing map
         drawMap();
 
         // Moving monsters
-        for (Monster monster : monsters) {
-            moveMonster(mapLayout, WizardX, WizardY, monster);
-        }
+//        for (Monster monster : monsters) {
+//            moveMonster(route, monster);
+//        }
     }
 
     // Modify startNextWave() to accept a wave index parameter
@@ -469,6 +502,7 @@ public class App extends PApplet {
             println("------------");
             println("Wave: ", currentWaveIndex);
             println("PreWavePause: ", preWavePause);
+            println("timeElapsedSinceLastWave", timeElapsedSinceLastWave);
             println("Duration: ", waves[currentWaveIndex].duration);
 
             if (timeElapsedSinceLastWave < preWavePause) {
@@ -495,6 +529,8 @@ public class App extends PApplet {
 
     void startNextWave(int waveIndex) {
         canStart = false;
+        isSpawningAllowed = true;
+        spawningStartTime = (long) (millis() / 1000.0);
         println("CANSTART CHANGED TO FALSE!!!!!!!");
         // Increment the current wave index
         currentWaveIndex++;
@@ -514,20 +550,25 @@ public class App extends PApplet {
             println("Monsters: " + currentWave.monsters.length);
             println("Monster 1 type: " + currentWave.monsters[0].type);
 
-            // Spawn monsters based on the current wave's configuration
-            for (Monster monster : currentWave.monsters) {
-                for (int i = 0; i < monster.quantity; i++) {
-                    spawnMonster(monster); // Call a function to spawn monsters
-                }
-            }
+//            // Spawn monsters based on the current wave's configuration
+//            for (Monster monster : currentWave.monsters) {
+//                for (int i = 0; i < monster.quantity; i++) {
+//                    spawnMonster(monster); // Call a function to spawn monsters
+//                }
+//            }
 
         }
     }
 
     void spawnMonster(Monster monster) {
+//        println("SPAWNING@@@@");
         // Choose a random spawn location from the spawnLocations list
         int spawnIndex = (int) random(spawnLocations.size());
         PVector spawnLocation = spawnLocations.get(spawnIndex);
+        PVector spawnLocationIndex = spawnLocationsIndex.get(spawnIndex);
+
+        findPath(mapLayout, spawnLocations.get(spawnIndex), new PVector(WizardXIndex, WizardYIndex));
+
 
         // Set the monster's spawn location (X and Y coordinates)
         monster.x = spawnLocation.x;
@@ -548,23 +589,50 @@ public class App extends PApplet {
         monsters.add(monster);
     }
 
-    public void moveMonster(char[][] map, float targetX, float targetY, Monster monster) {
+    public void moveMonster(List<PVector> route, Monster monster) {
+        println(route);
+        // Check if there are waypoints left in the route
+        if (!route.isEmpty()) {
+            // Get the next waypoint
+            PVector nextWaypoint = route.get(0);
 
-        // Determine the image file path based on the monster's type
-        String imageFilePath = "src/main/resources/WizardTD/" + monster.type + ".png";
+            // Calculate the actual position of the waypoint based on cell size
+            float nextWaypointX = nextWaypoint.x * CELLSIZE + (CELLSIZE - 48) / 2;
+            float nextWaypointY = nextWaypoint.y * CELLSIZE + TOPBAR + (CELLSIZE - 48) / 2;
 
-        // Load the monster's image from the specified file path
-        PImage monsterImage = loadImage(imageFilePath);
+            // Calculate the direction vector from the current position to the next waypoint
+            float dx = nextWaypointX - monster.x;
+            float dy = nextWaypointY - monster.y;
 
-        float speedX = random((float) -0.6, 1);
-        float speedY = random((float) -0.6, 1);
+            // Calculate the distance to the next waypoint
+            float distance = dist(monster.x, monster.y, nextWaypointX, nextWaypointY);
 
-        // Update the position by adding the random speeds
-        monster.x += speedX;
-        monster.y += speedY;
+            // Normalize the direction vector
+            float directionX = dx / distance;
+            float directionY = dy / distance;
 
-        image(monsterImage, monster.x, monster.y);
+            // Calculate the movement increment based on the monster's speed
+            float moveX = directionX * monster.speed;
+            float moveY = directionY * monster.speed;
+
+            // Update the monster's position
+            monster.x += moveX;
+            monster.y += moveY;
+
+            // Check if the monster has reached the next waypoint
+            if (distance < monster.speed) {
+                // Remove the reached waypoint from the route
+                route.remove(0);
+            }
+
+            // Load and display the monster's image at the updated position
+            String imageFilePath = "src/main/resources/WizardTD/" + monster.type + ".png";
+            PImage monsterImage = loadImage(imageFilePath);
+            image(monsterImage, monster.x, monster.y);
+        }
     }
+
+
 
 
     public static void main(String[] args) {
