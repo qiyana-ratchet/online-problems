@@ -28,6 +28,7 @@ public class Monster {
     float x;
     float y;
 
+
     public static final int CELLSIZE = 32;
     public static final int SIDEBAR = 120;
     public static final int TOPBAR = 40;
@@ -39,6 +40,19 @@ public class Monster {
     public static final int FPS = 60;
 
     public String configPath;
+
+    // Add a field to store the monster's route
+    private List<PVector> route = new ArrayList<>();
+
+    // Getter and setter for the route field
+    public List<PVector> getRoute() {
+//        println("Got route: ", route);
+        return route;
+    }
+
+    public void setRoute(List<PVector> route) {
+        this.route = route;
+    }
 
     Monster(String type, int hp, float speed, float armour, int manaGainedOnKill, int quantity,  float x, float y) {
         this.type = type;
