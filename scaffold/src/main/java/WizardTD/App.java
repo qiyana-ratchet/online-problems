@@ -32,7 +32,7 @@ public class App extends PApplet {
 
     // Define image variables for tiles, towers, and enemies
     private PImage grassImg, shrubImg, pathImg, towerImg, wizardHouseImg;
-    private PImage[] gremlinImgs = new PImage[6]; // Gremlin has multiple images for animation
+    private PImage[] gremlinImgs = new PImage[6]; // Multiple images for animation
     private PImage fireballImg;
 
     float WizardX = 0;
@@ -59,30 +59,39 @@ public class App extends PApplet {
     ArrayList<PVector> spawnLocations = new ArrayList<>(); // monster spawn location
     ArrayList<PVector> spawnLocationsIndex = new ArrayList<>(); // monster spawn location
 
-    // Add this field to your App class
-    private int currentWaveIndex = 0; // Initialize to 0 to indicate no waves have started yet
+    private int currentWaveIndex = 0; // no waves have started yet
     private float timeSinceLastWaveStart = 0;
 
     List<Monster> monstersInMap = new ArrayList<>();
 
-    // Add this field to your App class
-    private boolean isWaveActive = false; // Initialize to false to indicate no wave is active
-    boolean canStart = false; // Variable for indicating that you can start the wave
+    private boolean isWaveActive = false; // no wave is active
+    boolean canStart = false; // you can start the wave
 
     PImage path0Img;
     PImage path1Img;
     PImage path2Img;
     PImage path3Img;
 
-    // Define constants for directions (up, down, left, right)
+    // Define directions (up, down, left, right)
     static final int[] dx = {-1, 1, 0, 0};
     static final int[] dy = {0, 0, -1, 1};
 
     long lastSpawnTime = 0;
     boolean isSpawningAllowed = false;
-    //     long spawningStartTime = 0;
     float spawningStartTime = 0;
-    private float timeElapsedSinceLastWave;
+    float timeElapsedSinceLastWave;
+
+    // variable to track the Tower button state
+    boolean isTowerButtonActive = false;
+    private int buttonSpacing;
+    private float buttonStartX;
+    private float buttonStartY;
+    private float buttonOriginStartX;
+    private float buttonOriginStartY;
+    private int buttonSize;
+
+    ArrayList<PVector> towerPositions = new ArrayList<PVector>();
+
 
     /**
      * Starting the App
@@ -115,7 +124,7 @@ public class App extends PApplet {
         // Load images during setup
         grassImg = loadImage(resourcePath + "grass.png");
         shrubImg = loadImage(resourcePath + "shrub.png");
-        towerImg = loadImage(resourcePath + "tower0.png"); // You can change this based on the tower type
+        towerImg = loadImage(resourcePath + "tower0.png");
         wizardHouseImg = loadImage(resourcePath + "wizard_house.png");
 
         // Load path tile images
@@ -127,7 +136,7 @@ public class App extends PApplet {
         // Load gremlin animation frames
         for (int i = 0; i < 6; i++) {
             if (i == 0) {
-                gremlinImgs[i] = loadImage(resourcePath + "gremlin.png"); // Use "gremlin.png" for the first image
+                gremlinImgs[i] = loadImage(resourcePath + "gremlin.png");
             } else {
                 gremlinImgs[i] = loadImage(resourcePath + "gremlin" + i + ".png");
             }
@@ -151,7 +160,6 @@ public class App extends PApplet {
                     if (line.charAt(col) == 'X' &&
                             (row == 0 || row == BOARD_WIDTH - 1 || col == 0 || col == BOARD_WIDTH - 1)) {
                         // Store the spawn location as a PVector
-//                        println("COORDS: ",col, row);
                         spawnLocations.add(new PVector(col * CELLSIZE, row * CELLSIZE + TOPBAR));
                         spawnLocationsIndex.add(new PVector(col, row));
                     }
@@ -165,37 +173,77 @@ public class App extends PApplet {
         }
 
         // Set up the game board based on the mapLayout array
-        background(0); // Set background color
+        background(0);
 
-        // Call the drawMap function to draw the map
+        // drawMap function to draw the map
         drawMap();
 
-        // Iterate through the 2D array and print each character
+        // print map layout
         println("-----Map Layout-----");
         for (int row = 0; row < BOARD_WIDTH; row++) {
             for (int col = 0; col < BOARD_WIDTH; col++) {
                 char tileChar = mapLayout[row][col];
-                System.out.print(tileChar + " "); // Print the character followed by a space
+                System.out.print(tileChar + " ");
             }
-            System.out.println(); // Move to the next line after each row
+            System.out.println();
         }
 
-        // FINDPATH
-//        println(spawnLocations.get(0).x, spawnLocations.get(0).y);
-//        findPath(mapLayout, spawnLocations.get(0), new PVector(WizardXIndex, WizardYIndex));
-    }
 
-    Stack<PVector> route;
+        /*********************************
+         * STARTING TOWER SETUP
+         *********************************/
+
+        fill(132, 115, 74); // Set the background color
+        rect(WIDTH - SIDEBAR, 0, SIDEBAR, HEIGHT); // Draw the sidebar background
+
+        float buttonWidth = 30;
+        float buttonHeight = 30;
+        buttonSize = 30;
+        buttonSpacing = 15; // Spacing between buttons
+
+        // button data
+        String[][] buttonData = {
+                {"FF", "2x speed"},
+                {"P", "Pause"},
+                {"B", "Build \nTower"},
+                {"U1", "Upgrade \nrange"},
+                {"U2", "Upgrade \nspeed"},
+                {"U3", "Upgrade \npower"},
+                {"M", "Mana pool\ncost 100"}
+        };
+
+        buttonStartX = WIDTH - SIDEBAR + 10;
+        buttonOriginStartX = WIDTH - SIDEBAR + 10;
+        println("buttonStartX:", buttonStartX);
+        buttonStartY = 20;
+        buttonOriginStartY = 20;
+
+        for (String[] data : buttonData) {
+            fill(132, 115, 74);
+            strokeWeight(2);
+            rect(buttonStartX, buttonStartY, buttonWidth, buttonHeight);
+
+            fill(0);
+            textSize(16);
+            textAlign(CENTER, CENTER);
+            text(data[0], buttonStartX + buttonWidth / 2, buttonStartY + buttonHeight / 2);
+
+            fill(0);
+            textSize(12);
+            textAlign(LEFT, CENTER);
+            text(data[1], buttonStartX + buttonWidth + 10, buttonStartY + buttonHeight / 2); // Adjust the position as needed
+
+            // Move to the next button position
+            buttonStartY += buttonHeight + buttonSpacing;
+        }
+
+    }
 
     public boolean findPath(char[][] mapLayout, PVector spawnLocation, PVector wizardHouse, Monster monster) {
         Queue<PVector> queue = new LinkedList<>();
         boolean[][] visited = new boolean[mapLayout.length][mapLayout[0].length];
         PVector[][] parent = new PVector[mapLayout.length][mapLayout[0].length];
 
-//        queue.add(spawnLocation);
-//        visited[(int) spawnLocation.y][(int) spawnLocation.x] = true;
-//        col * CELLSIZE
-//        row * CELLSIZE + TOPBAR
         int ix = (int) spawnLocation.x / CELLSIZE;
         int iy = (int) (spawnLocation.y - TOPBAR) / CELLSIZE;
         queue.add(new PVector(ix, iy));
@@ -203,31 +251,20 @@ public class App extends PApplet {
 
         while (!queue.isEmpty()) {
             PVector current = queue.poll();
-//            println("current: ", current, "wizardHouse", wizardHouse);
             // Check if the current position is the wizard's house
             if (current.equals(wizardHouse)) {
-                // Path found, backtrack to construct the route
-//                route = new Stack<>();
+                // backtrack to construct the route
                 Stack<PVector> route = new Stack<>();
                 PVector trace = current;
 
                 while (trace != null) {
                     route.push(trace);
                     trace = parent[(int) trace.y][(int) trace.x];
-//                    println("route: ", route);
                 }
                 Collections.reverse(route);
 
-                //set route
+                // set route
                 monster.setRoute(route);
-
-                // Print the route
-//                System.out.println("Route from spawn to wizard's house:");
-//                while (!route.isEmpty()) {
-//                    PVector step = route.pop();
-//                    System.out.println("X: " + step.x + ", Y: " + step.y);
-//                }
-//                println("route: ", route);
 
                 return true;
             }
@@ -244,9 +281,6 @@ public class App extends PApplet {
                     visited[newY][newX] = true;
                     parent[newY][newX] = current; // add current path to parent
                 }
-//                else{
-//                    println("Conditions do not match");
-//                }
             }
         }
         println("No path were found. ");
@@ -260,7 +294,6 @@ public class App extends PApplet {
                 PImage tileImage = null;
 
                 // Determine the tile type based on the neighboring tiles
-                int tileType;
                 if (tileChar == 'S') {
                     // Default to shrub
                     tileImage = shrubImg;
@@ -310,6 +343,8 @@ public class App extends PApplet {
                     WizardX = wizardHouseX;
                     WizardY = wizardHouseY;
 
+                } else if (tileChar == 'T'){
+                    tileImage = towerImg;
                 } else {
                     // Default to grass
                     tileImage = grassImg;
@@ -318,8 +353,7 @@ public class App extends PApplet {
                 image(tileImage, col * CELLSIZE, row * CELLSIZE + TOPBAR, CELLSIZE, CELLSIZE);
             }
         }
-        // Render the wizard's house
-        // image(wizardHouseImg, wizardHouseX, wizardHouseY, 48, 48);
+        // Rerender the wizard's house
         image(wizardHouseImg, WizardX, WizardY, 48, 48);
     }
 
@@ -355,31 +389,6 @@ public class App extends PApplet {
                         waveObject.getJSONArray("monsters")
                 );
             }
-            //check if values are correct
-//            println("layoutFileName: " + layoutFileName);
-//            println("initialTowerRange: " + initialTowerRange);
-//            println("initialTowerFiringSpeed: " + initialTowerFiringSpeed);
-//            println("initialTowerDamage: " + initialTowerDamage);
-//            println("initialMana: " + initialMana);
-//            println("initialManaCap: " + initialManaCap);
-//            println("initialManaGainedPerSecond: " + initialManaGainedPerSecond);
-//            println("towerCost: " + towerCost);
-//            println("manaPoolSpellInitialCost: " + manaPoolSpellInitialCost);
-//            println("manaPoolSpellCostIncreasePerUse: " + manaPoolSpellCostIncreasePerUse);
-//            println("manaPoolSpellCapMultiplier: " + manaPoolSpellCapMultiplier);
-//            println("manaPoolSpellManaGainedMultiplier: " + manaPoolSpellManaGainedMultiplier);
-//            println("waves: " + waves);
-//            println("waves.length: " + waves.length);
-//            println("waves[0].duration: " + waves[0].duration);
-//            println("waves[0].preWavePause: " + waves[0].preWavePause);
-//            println("waves[0].monsters: " + waves[0].monsters);
-//            println("waves[0].monsters.length: " + waves[0].monsters.length);
-//            println("waves[0].monsters[0].type: " + waves[0].monsters[0].type);
-//            println("waves[0].monsters[0].hp: " + waves[0].monsters[0].hp);
-//            println("waves[0].monsters[0].speed: " + waves[0].monsters[0].speed);
-//            println("waves[0].monsters[0].armour: " + waves[0].monsters[0].armour);
-//            println("waves[0].monsters[0].manaGainedOnKill: " + waves[0].monsters[0].manaGainedOnKill);
-//            println("waves[0].monsters[0].quantity: " + waves[0].monsters[0].quantity);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -390,7 +399,9 @@ public class App extends PApplet {
      */
     @Override
     public void keyPressed() {
-
+        if (key == 't' || key == 'T') {
+            isTowerButtonActive = !isTowerButtonActive;
+        }
     }
 
     /**
@@ -403,7 +414,63 @@ public class App extends PApplet {
 
     @Override
     public void mousePressed(MouseEvent e) {
+        println(mouseX, mouseY);
+        if (isTowerButtonClicked(mouseX, mouseY)) {
+            println("#####################Clicked#####################");
+            // Toggle the Tower button state when clicked
+            isTowerButtonActive = !isTowerButtonActive;
+        }
 
+
+        /*******************
+         * Tower Drawings
+         *******************/
+        // Check if the Tower button is active
+        if (isTowerButtonActive) {
+            println("Tower Placement Active");
+            // Listen for mouse click
+            println("inside tower placement");
+            float mouseXPos = mouseX;
+            float mouseYPos = mouseY - TOPBAR;
+
+            // Calculate the grid cell coordinates where the user clicked
+            int gridX = (int) (mouseXPos / CELLSIZE);
+            int gridY = (int) (mouseYPos / CELLSIZE);
+
+            // Check if the clicked cell is an empty grass tile
+            if (gridX >= 0 && gridX < BOARD_WIDTH && gridY >= 0 && gridY < BOARD_WIDTH &&
+                    mapLayout[gridY][gridX] == ' ') {
+                println("inside grass");
+
+                // Place a tower at the clicked position
+                placeTower(gridX, gridY);
+
+                // Deactivate the Tower button
+                isTowerButtonActive = false;
+            }
+        }
+    }
+
+    void placeTower(int gridX, int gridY) {
+        println("placeTower In");
+        // Calculate the tower's position in pixels
+        float towerX = gridX * CELLSIZE;
+        float towerY = gridY * CELLSIZE + TOPBAR;
+
+        // Load the tower image
+        PImage towerImage = loadImage("src/main/resources/WizardTD/tower0.png");
+        image(towerImage, towerX, towerY, CELLSIZE, CELLSIZE);
+
+        // Update the mapLayout to mark the cell as occupied by a tower (e.g., 'T')
+        mapLayout[gridY][gridX] = 'T';
+    }
+
+    boolean isTowerButtonClicked(float x, float y) {
+        float towerButtonX = buttonOriginStartX;
+        float towerButtonY = buttonOriginStartY + 2 * buttonSize + 2 * buttonSpacing;
+        println("Tower Coords:", towerButtonX, towerButtonY);
+        return x >= towerButtonX && x <= towerButtonX + buttonSize &&
+                y >= towerButtonY && y <= towerButtonY + buttonSize;
     }
 
     @Override
@@ -425,13 +492,9 @@ public class App extends PApplet {
     @Override
     public void draw() {
         float timeUntilNextWave = calculateTimeUntilNextWave();
-        // Calculate the time until the next wave begins
-//        println("-------Log-------");
-//        println("Time until next wave: " + timeUntilNextWave + " seconds");
-
         // Display the time in the top left corner of the GUI
-        fill(0); // Set the fill color to black
-        rect(0, 0, 250, 38); // Draw a black rectangle for the timer region
+        fill(132, 115, 74); // Set the fill color to menu color
+        rect(0, 0, 640, 40); // Draw a rectangle for the timer region
 
         // Display the time in the top left corner of the GUI
         fill(255);
@@ -439,22 +502,20 @@ public class App extends PApplet {
         textAlign(LEFT, TOP);
 
         if (currentWaveIndex < waves.length) {
-            println("canStart: ", canStart);
-            println("timeUntilNextWave:", timeUntilNextWave);
-//            if (timeUntilNextWave > 0) {
+//            println("canStart: ", canStart);
+//            println("timeUntilNextWave:", timeUntilNextWave);
             int timeUntilNextWaveInt = floor(timeUntilNextWave);
             if (!isWaveActive) {
                 // Display time until wave start
                 text("Wave " + (currentWaveIndex + 1) + " starts in: " + timeUntilNextWaveInt + "s", 10, 10);
             } else {
                 if (canStart) {
-                    println("######################YES WE STARTING NEW WAVE######################");
+//                    println("######################STARTING NEW WAVE######################");
                     startNextWave(currentWaveIndex);
                 }
                 // Display wave duration
                 text("Wave " + (currentWaveIndex + 1) + " in progress: " + nf(timeUntilNextWave, 0, 1) + "s", 10, 10);
             }
-//            }
         } else {
             // All waves are completed
             text("All waves completed!", 10, 10);
@@ -462,28 +523,29 @@ public class App extends PApplet {
 
         if (currentWaveIndex < waves.length) {
             Wave currentWave = waves[currentWaveIndex];
+
             int totalMonstersToSpawn = currentWave.monsters[0].quantity;
-//        int totalMonstersToSpawn = 3;
-            println("total monsters to spawn", totalMonstersToSpawn);
-//        println(currentWave.monsters);
+//            println("total monsters to spawn", totalMonstersToSpawn);
             int spawnInterval = (int) (currentWave.duration * 1000) / totalMonstersToSpawn;
-            println("spawnInterval: ", spawnInterval);
+//            println("spawnInterval: ", spawnInterval);
+
             // Calculate the time elapsed since the last monster spawn
             long currentTime = millis();
             long elapsedTime = currentTime - lastSpawnTime;
-            println("isSpawningAllowed:", isSpawningAllowed);
-            println("monstersSpawned:", monstersSpawned, "totalMosntersToSpawn:", totalMonstersToSpawn);
-            float elapsedTimeSinceSpawningStart = 0;
+//            println("isSpawningAllowed:", isSpawningAllowed);
+//            println("monstersSpawned:", monstersSpawned, "totalMosntersToSpawn:", totalMonstersToSpawn);
+
+            float elapsedTimeSinceSpawningStart;
             if (isSpawningAllowed && monstersSpawned < totalMonstersToSpawn) {
-//            println("GOGOGO1");
+
                 // Check if it's time to spawn a monster
-                println("elapsedTime", elapsedTime, "spawnInterval", spawnInterval);
                 elapsedTimeSinceSpawningStart = currentTime - spawningStartTime;
-                println("currentTime", currentTime);
-                println("spawningStartTIme:", spawningStartTime);
-                println("elapsedTimeSinceSpawningStart:", elapsedTimeSinceSpawningStart);
+//                println("elapsedTime", elapsedTime, "spawnInterval", spawnInterval);
+//                println("currentTime", currentTime);
+//                println("spawningStartTIme:", spawningStartTime);
+//                println("elapsedTimeSinceSpawningStart:", elapsedTimeSinceSpawningStart);
                 if (elapsedTimeSinceSpawningStart >= currentWave.duration * 1000) {
-                    println("turning isSpawn off");
+//                    println("switching isSpawningAllowed false");
                     // Spawning duration has passed, turn off spawning
                     isSpawningAllowed = false;
                     currentWaveIndex++;
@@ -492,7 +554,6 @@ public class App extends PApplet {
 
                 if (elapsedTime >= spawnInterval) {
                     lastSpawnTime = currentTime;
-//                println("GOGOGO2");
                     // Spawn a monster here
                     // Update lastSpawnTime to the current time
                     spawnMonster(currentWave.monsters[0]);
@@ -501,7 +562,7 @@ public class App extends PApplet {
             } else if (monstersSpawned >= totalMonstersToSpawn) {
                 elapsedTimeSinceSpawningStart = currentTime - spawningStartTime;
                 if (elapsedTimeSinceSpawningStart >= currentWave.duration * 1000) {
-                    println("turning isSpawn off");
+//                    println("turning isSpawn off");
                     // Spawning duration has passed, turn off spawning
                     isSpawningAllowed = false;
                     currentWaveIndex++;
@@ -520,54 +581,43 @@ public class App extends PApplet {
 
         image(wizardHouseImg, WizardX, WizardY, 48, 48);
 
-//        println("Monsters: ", monsters);
-//        for (int i=0;i<monsters.size();i++) {
-//            moveMonster(route, monsters.get(0));
-//        }
+
     }
 
-    // Modify startNextWave() to accept a wave index parameter
+
+
     private float calculateTimeUntilNextWave() {
         if (currentWaveIndex >= 0 && currentWaveIndex < waves.length) {
             float currentTime = millis() / 1000.0f; // Convert millis to seconds
-            println("currentTime:", currentTime, "timeSinceLastWaveStart:", timeSinceLastWaveStart);
+//            println("currentTime:", currentTime, "timeSinceLastWaveStart:", timeSinceLastWaveStart);
             timeElapsedSinceLastWave = currentTime - timeSinceLastWaveStart; // Time since a single wave start
             float preWavePause = waves[currentWaveIndex].preWavePause; // Pre wave pause time
 
-            println("------------");
-            println("Wave: ", currentWaveIndex);
-            println("PreWavePause: ", preWavePause);
-            println("timeElapsedSinceLastWave", timeElapsedSinceLastWave);
-            println("Duration: ", waves[currentWaveIndex].duration);
+//            println("------------");
+//            println("Wave: ", currentWaveIndex);
+//            println("PreWavePause: ", preWavePause);
+//            println("timeElapsedSinceLastWave", timeElapsedSinceLastWave);
+//            println("Duration: ", waves[currentWaveIndex].duration);
 
-//            if (timeElapsedSinceLastWave < preWavePause) {
-//                // Wave hasn't started yet, return time until wave start
-//                println("Wave hasn't started yet");
-//                isWaveActive = false;
-//            } else if (timeElapsedSinceLastWave < preWavePause + waves[currentWaveIndex].duration) {
-//                // Wave is active, return the wave duration
-//                println("Wave is active");
-//                isWaveActive = true;
-//            }
             if (timeElapsedSinceLastWave < preWavePause && !isSpawningAllowed) {
                 // Wave hasn't started yet, return time until wave start
-                println("Wave hasn't started yet");
+//                println("Wave hasn't started yet");
                 isWaveActive = false;
             } else if (timeElapsedSinceLastWave < preWavePause + waves[currentWaveIndex].duration) {
                 // Wave is active, return the wave duration
-                println("Wave is active");
+//                println("Wave is active");
                 isWaveActive = true;
                 isSpawningAllowed = true;
             }
-            println("isWaveActive: ", isWaveActive);
+//            println("isWaveActive: ", isWaveActive);
 
             if (!isWaveActive) {
                 canStart = true;
                 return max(preWavePause - timeElapsedSinceLastWave, 0);
             } else {
-                println("wave duration:", waves[currentWaveIndex].duration);
-                println("timeElapsedSinceLastWave:", timeElapsedSinceLastWave);
-                println("preWavePause:", preWavePause);
+//                println("wave duration:", waves[currentWaveIndex].duration);
+//                println("timeElapsedSinceLastWave:", timeElapsedSinceLastWave);
+//                println("preWavePause:", preWavePause);
 
                 return waves[currentWaveIndex].duration - (timeElapsedSinceLastWave);
             }
@@ -579,52 +629,32 @@ public class App extends PApplet {
     void startNextWave(int waveIndex) {
         canStart = false;
         isSpawningAllowed = true;
-//        spawningStartTime = (float) (millis() / 1000.0);
         spawningStartTime = (float) (millis());
-//        println(millis());
-//        println(millis()/1000.0);
-//        println((long)(millis()/1000.0));
-        println("spawningStartTime:", spawningStartTime);
-        println("CANSTART CHANGED TO FALSE!!!!!!!");
-        // Increment the current wave index
-//        currentWaveIndex++;
-        println("currentWaveIndex: ", currentWaveIndex);
+//        println("spawningStartTime:", spawningStartTime);
+//        println("CANSTART CHANGED TO FALSE!!!!!!!");
 
         if (waveIndex < waves.length) {
-
             // Set the time since last wave start to the current time
             timeSinceLastWaveStart = millis() / 1000.0f;
 
             // Implement logic to start the wave here
             Wave currentWave = waves[waveIndex];
 
-            println("Starting wave " + (waveIndex + 1) + " with " + currentWave.monsters[0].quantity + " monsters");
-            println("Wave duration: " + currentWave.duration);
-            println("Pre-wave pause: " + currentWave.preWavePause);
-            println("Monsters: " + currentWave.monsters.length);
-            println("Monster type: " + currentWave.monsters[0].type);
-
-//            // Spawn monsters based on the current wave's configuration
-//            for (Monster monster : currentWave.monsters) {
-//                for (int i = 0; i < monster.quantity; i++) {
-//                    spawnMonster(monster); // Call a function to spawn monsters
-//                }
-//            }
-
+//            println("Starting wave " + (waveIndex + 1) + " with " + currentWave.monsters[0].quantity + " monsters");
+//            println("Wave duration: " + currentWave.duration);
+//            println("Pre-wave pause: " + currentWave.preWavePause);
+//            println("Monsters: " + currentWave.monsters.length);
+//            println("Monster type: " + currentWave.monsters[0].type);
         }
     }
 
     void spawnMonster(Monster monster) {
-        println("SPAWNING@@@@");
+//        println("SPAWNED MONSTER");
         // Choose a random spawn location from the spawnLocations list
         int spawnIndex = (int) random(spawnLocations.size());
         PVector spawnLocation = spawnLocations.get(spawnIndex);
-        PVector spawnLocationIndex = spawnLocationsIndex.get(spawnIndex);
-
         Monster newMonster = new Monster(monster.type, monster.hp, monster.speed, monster.armour, monster.manaGainedOnKill, monster.quantity, monster.x, monster.y);
-
         findPath(mapLayout, spawnLocations.get(spawnIndex), new PVector(WizardXIndex, WizardYIndex), newMonster);
-
 
         // Set the monster's spawn location (X and Y coordinates)
         newMonster.x = spawnLocation.x;
@@ -638,16 +668,12 @@ public class App extends PApplet {
 
         // Draw the monster at its spawn location
         image(monsterImage, newMonster.x, newMonster.y);
-//        println("Monster Drawn");
-
 
         // Add the monster to your game's data structure (monsters list)
         monstersInMap.add(newMonster);
     }
 
     public void moveMonster(List<PVector> route, Monster monster) {
-//        println("@@@@@@@@@@@@@@@@@@@@@MoveMonster Called@@@@@@@@@@@@@@@@@@@@@");
-//        println(route);
         // Check if there are waypoints left in the route
         if (!route.isEmpty()) {
             // Get the next waypoint
