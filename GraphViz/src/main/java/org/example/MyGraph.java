@@ -133,8 +133,8 @@ public class MyGraph {
         myGraph.outputGraph("output.txt");
 
         // Output the graph to a DOT file
-//        myGraph.outputDOTGraph("output.dot");
+        myGraph.outputDOTGraph("output.dot");
 
-//        myGraph.outputGraphics("outputDOT.png", "PNG");
+        myGraph.outputGraphics("outputDOT.png", "PNG");
     }
 }
