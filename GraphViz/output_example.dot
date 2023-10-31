@@ -1,0 +1,15 @@
+digraph G {
+    A [label="A"];
+    B [label="Edge 1", weight=2];
+    C [label="Edge 2", weight=1];
+    D [label="D"];
+    E [label="E"];
+    F [label="F"];
+
+    A -> B [label="Edge 1", weight=2];
+    B -> C [label="Edge 2", weight=1];
+    C -> A [label="Edge 3", weight=3];
+    A -> D;
+    D -> E;
+    E -> A;
+}

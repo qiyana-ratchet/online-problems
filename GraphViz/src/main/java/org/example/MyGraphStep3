@@ -1,7 +1,5 @@
 package org.example;
 
-import guru.nidi.graphviz.engine.Format;
-import guru.nidi.graphviz.engine.Graphviz;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import java.io.*;
@@ -83,39 +81,6 @@ public class MyGraph {
         }
     }
 
-    public void outputDOTGraph(String path) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(path))) {
-            writer.println("digraph G {");
-
-            // Write nodes with attributes
-            for (String node : graph.vertexSet()) {
-                writer.println("    " + node + " [label=\"" + node + "\"];");
-            }
-
-            // Write edges with attributes
-            for (DefaultEdge edge : graph.edgeSet()) {
-                String srcNode = graph.getEdgeSource(edge);
-                String dstNode = graph.getEdgeTarget(edge);
-                writer.println("    " + srcNode + " -> " + dstNode + " [label=\"" + graph.getEdgeWeight(edge) + "\"];");
-            }
-
-            writer.println("}");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void outputGraphics(String path, String format) {
-        try {
-            Graphviz.fromFile(new File("output.dot"))
-                    .render(Format.valueOf(format))
-                    .toFile(new File(path));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-
     public static void main(String[] args) {
         MyGraph myGraph = new MyGraph();
         myGraph.parseGraph("input.dot");
@@ -129,12 +94,7 @@ public class MyGraph {
         myGraph.addEdge("D", "E");
         myGraph.addEdge("E", "A");
 
-        System.out.println(myGraph);
-        myGraph.outputGraph("output.txt");
-
-        // Output the graph to a DOT file
-//        myGraph.outputDOTGraph("output.dot");
-
-//        myGraph.outputGraphics("outputDOT.png", "PNG");
+        System.out.println(myGraph.toString());
+        myGraph.outputGraph("output.dot");
     }
 }
