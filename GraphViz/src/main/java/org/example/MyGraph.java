@@ -8,7 +8,7 @@ import java.io.*;
 import java.util.*;
 
 public class MyGraph {
-    private DefaultDirectedGraph<String, DefaultEdge> graph;
+    public DefaultDirectedGraph<String, DefaultEdge> graph;
 
     public MyGraph() {
         // Initialize an empty directed graph when creating a new MyGraph object.
@@ -24,10 +24,11 @@ public class MyGraph {
                     String[] parts = line.split("->");
                     String srcNode = parts[0].trim();
                     String dstNode = parts[1].trim();
-                    graph.addVertex(srcNode);
-                    graph.addVertex(dstNode);
-                    graph.addEdge(srcNode, dstNode);
+                    this.graph.addVertex(srcNode);
+                    this.graph.addVertex(dstNode);
+                    this.graph.addEdge(srcNode, dstNode);
                 }
+                // TODO: add nodes without edges
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -129,7 +130,6 @@ public class MyGraph {
         myGraph.addEdge("D", "E");
         myGraph.addEdge("E", "A");
 
-        System.out.println(myGraph);
         myGraph.outputGraph("output.txt");
 
         // Output the graph to a DOT file

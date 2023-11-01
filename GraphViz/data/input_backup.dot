@@ -1,0 +1,13 @@
+digraph MyGraph {
+    // Define nodes with labels and attributes
+    A
+    B
+    C
+
+    // Define edges with attributes
+    A -> B
+    B -> C
+    C -> A
+
+
+}

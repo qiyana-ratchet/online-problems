@@ -1,4 +1,4 @@
-digraph MyGraph {
+digraph TestGraph {
     // Define nodes
     A
     B

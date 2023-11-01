@@ -1,0 +1,5 @@
+digraph TestGraph {
+    A -> B;
+    B -> C;
+    C -> A;
+}
