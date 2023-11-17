@@ -72,6 +72,5 @@ public class MyGraphTest {
         File pngFile = new File("testOutput.png");
         Assert.assertTrue(pngFile.exists());
 
-        // Add more assertions as needed
     }
 }
