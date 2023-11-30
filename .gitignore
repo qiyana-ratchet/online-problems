@@ -404,3 +404,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+!/travel_manager/.idea/discord.xml
+!/travel_manager/.idea/discord.xml
+!/travel_manager/.idea/modules.xml
+!/travel_manager/.idea/misc.xml

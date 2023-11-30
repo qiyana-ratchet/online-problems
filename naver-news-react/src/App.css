@@ -1,0 +1,75 @@
+body {
+  font-family: Arial, sans-serif;
+  text-align: center; /* Center-align the content */
+  background-color: #f2f2f2; /* Add a light background color */
+}
+
+h1 {
+  font-size: 36px; /* Increase font size for the title */
+  margin-top: 20px; /* Add some space above the title */
+  color: #333; /* Darken the title color */
+}
+
+table {
+  width: 80%;
+  margin: 20px auto;
+  border-collapse: collapse;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); /* Add a subtle box shadow to the table */
+  background-color: #fff; /* White background for the table */
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: left;
+}
+
+th {
+  background-color: #333; /* Dark background color for table headers */
+  color: #fff; /* White text color for table headers */
+}
+
+tr:hover {
+  background-color: #f5f5f5;
+}
+
+a {
+  text-decoration: none; /* Remove underline from links */
+  color: #0077cc; /* Blue color for links */
+  font-weight: bold; /* Make links bold */
+}
+
+a:hover {
+  text-decoration: underline; /* Underline links on hover */
+}
+
+
+/* Style the comment section */
+.comment-section {
+  /*display: none;*/
+  /*margin-top: 10px;*/
+  padding: 4px;
+  border: 1px solid #ddd;
+  background-color: #f5f5f5;
+}
+
+/* Style the toggle button */
+.toggle-comment {
+  background-color: #0077cc;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.comment {
+  background-color: #f2f2f2; /* Light grey background */
+  border: 1px solid #ddd; /* Slight border for definition */
+  padding: 8px; /* Spacing inside the comment */
+  margin: 6px 6px; /* Space between comments */
+  border-radius: 4px; /* Rounded corners for a softer look */
+  font-family: Arial, sans-serif; /* Font style */
+  font-size: 14px; /* Font size */
+  color: #333; /* Text color */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
